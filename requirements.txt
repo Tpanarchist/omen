@@ -1,0 +1,15 @@
+# OMEN v0.7 Protocol Implementation Dependencies
+
+# JSON Schema validation (Draft 2020-12 support)
+jsonschema>=4.20.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Type checking
+mypy>=1.7.0
+
+# Code quality
+black>=23.12.0
+pylint>=3.0.0

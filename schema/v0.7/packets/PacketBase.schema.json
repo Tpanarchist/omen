@@ -17,5 +17,10 @@
       "description": "Type-specific payload (see individual packet schemas)"
     }
   },
+  "patternProperties": {
+    "^_": {
+      "description": "Metadata fields (e.g., _validation_notes) allowed for testing"
+    }
+  },
   "additionalProperties": false
 }
