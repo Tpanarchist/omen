@@ -1067,4 +1067,3 @@ A sequence is valid if:
 
 ---
 
-If you want the *absolute* “one file” feel, the next move is to pick a single filename and treat this as the canonical root doc (e.g., `OMEN_CANONICAL.md`), then everything else becomes either (a) appendices or (b) machine-readable schema files generated from the normative sections above.
