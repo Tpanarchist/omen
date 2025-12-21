@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omen.ace-framework.org/schema/v0.7/packets/PacketBase.schema.json",
+  "title": "PacketBase",
+  "description": "Base packet structure: header + mcp + type-specific payload (OMEN.md Section 9)",
+  "type": "object",
+  "required": ["header", "mcp", "payload"],
+  "properties": {
+    "header": {
+      "$ref": "../header/PacketHeader.schema.json"
+    },
+    "mcp": {
+      "$ref": "../mcp/MCP.schema.json"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Type-specific payload (see individual packet schemas)"
+    }
+  },
+  "additionalProperties": false
+}

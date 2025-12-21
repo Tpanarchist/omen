@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omen.ace-framework.org/schema/v0.7/mcp/MCP.schema.json",
+  "title": "MCP",
+  "description": "Mandatory Compliance Payload enforcing E-POL, Q-POL, C-POL (OMEN.md Section 9.2, Lines 686-754)",
+  "type": "object",
+  "required": [
+    "intent",
+    "stakes",
+    "quality",
+    "budgets",
+    "epistemics",
+    "evidence",
+    "routing"
+  ],
+  "properties": {
+    "intent": {
+      "type": "object",
+      "description": "What this packet intends to accomplish",
+      "required": ["summary", "scope"],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "Brief intent statement",
+          "minLength": 1
+        },
+        "scope": {
+          "description": "Bounded context or domain affected",
+          "oneOf": [
+            {"type": "string"},
+            {"type": "object"}
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "stakes": {
+      "type": "object",
+      "description": "Four-axis stakes decomposition (OMEN.md Lines 475-483)",
+      "required": [
+        "impact",
+        "irreversibility",
+        "uncertainty",
+        "adversariality",
+        "stakes_level"
+      ],
+      "properties": {
+        "impact": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        },
+        "irreversibility": {
+          "type": "string",
+          "enum": ["REVERSIBLE", "PARTIAL", "IRREVERSIBLE"]
+        },
+        "uncertainty": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH"]
+        },
+        "adversariality": {
+          "type": "string",
+          "enum": ["BENIGN", "CONTESTED", "HOSTILE"]
+        },
+        "stakes_level": {
+          "type": "string",
+          "description": "Computed overall stakes (must be consistent with axes)",
+          "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "quality": {
+      "type": "object",
+      "description": "Effort tier and verification requirements (OMEN.md Lines 485-507)",
+      "required": [
+        "quality_tier",
+        "satisficing_mode",
+        "definition_of_done",
+        "verification_requirement"
+      ],
+      "properties": {
+        "quality_tier": {
+          "type": "string",
+          "enum": ["SUBPAR", "PAR", "SUPERB"]
+        },
+        "satisficing_mode": {
+          "type": "boolean",
+          "description": "True if optimizing for speed over completeness"
+        },
+        "definition_of_done": {
+          "type": "object",
+          "required": ["text", "checks"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Human-readable completion criteria",
+              "minLength": 1
+            },
+            "checks": {
+              "type": "array",
+              "description": "Machine-checkable completion conditions",
+              "items": {"type": "string"},
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "verification_requirement": {
+          "type": "string",
+          "enum": ["OPTIONAL", "VERIFY_ONE", "VERIFY_ALL"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "budgets": {
+      "type": "object",
+      "description": "Resource envelopes (OMEN.md Lines 509-520)",
+      "required": [
+        "token_budget",
+        "tool_call_budget",
+        "time_budget_seconds",
+        "risk_budget"
+      ],
+      "properties": {
+        "token_budget": {
+          "type": "integer",
+          "description": "Maximum tokens for LLM operations",
+          "minimum": 0
+        },
+        "tool_call_budget": {
+          "type": "integer",
+          "description": "Maximum tool invocations allowed",
+          "minimum": 0
+        },
+        "time_budget_seconds": {
+          "type": "integer",
+          "description": "Maximum wall-clock time",
+          "minimum": 0
+        },
+        "risk_budget": {
+          "type": "object",
+          "description": "Risk envelope constraints",
+          "required": ["envelope", "max_loss"],
+          "properties": {
+            "envelope": {
+              "type": "string",
+              "description": "Risk posture descriptor (e.g., 'low', 'medium', 'high')"
+            },
+            "max_loss": {
+              "description": "Maximum acceptable loss (ISK, assets, time)",
+              "oneOf": [
+                {"type": "string"},
+                {"type": "number"}
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "epistemics": {
+      "type": "object",
+      "description": "Epistemic status and confidence calibration (OMEN.md Lines 408-466)",
+      "required": [
+        "status",
+        "confidence",
+        "calibration_note",
+        "freshness_class",
+        "assumptions"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Epistemic classification (OMEN.md Lines 408-432)",
+          "enum": [
+            "OBSERVED",
+            "DERIVED",
+            "REMEMBERED",
+            "INFERRED",
+            "HYPOTHESIZED",
+            "UNKNOWN"
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "description": "Calibrated confidence score",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "calibration_note": {
+          "type": "string",
+          "description": "Brief justification for confidence level",
+          "minLength": 1
+        },
+        "freshness_class": {
+          "type": "string",
+          "description": "Temporal relevance class (OMEN.md Lines 456-461)",
+          "enum": [
+            "REALTIME",
+            "OPERATIONAL",
+            "STRATEGIC",
+            "ARCHIVAL"
+          ]
+        },
+        "stale_if_older_than_seconds": {
+          "type": "integer",
+          "description": "Staleness threshold for time-sensitive directives",
+          "minimum": 0
+        },
+        "assumptions": {
+          "type": "array",
+          "description": "Explicit assumptions this packet relies on",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Evidence grounding or explicit absence (OMEN.md Lines 468-479)",
+      "required": ["evidence_refs"],
+      "properties": {
+        "evidence_refs": {
+          "type": "array",
+          "description": "References to grounding artifacts",
+          "items": {
+            "type": "object",
+            "required": ["ref_type", "ref_id", "timestamp"],
+            "properties": {
+              "ref_type": {
+                "type": "string",
+                "enum": [
+                  "tool_output",
+                  "user_observation",
+                  "memory_item",
+                  "derived_calc"
+                ]
+              },
+              "ref_id": {
+                "type": "string",
+                "description": "URI or identifier for the evidence artifact",
+                "minLength": 1
+              },
+              "timestamp": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When this evidence was captured"
+              },
+              "reliability_score": {
+                "type": "number",
+                "description": "Optional reliability estimate for this evidence",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "evidence_absent_reason": {
+          "type": ["string", "null"],
+          "description": "Required if evidence_refs is empty"
+        }
+      },
+      "additionalProperties": false
+    },
+    "routing": {
+      "type": "object",
+      "description": "Compute routing metadata (OMEN.md Lines 620-690)",
+      "required": ["task_class", "tools_state"],
+      "properties": {
+        "task_class": {
+          "type": "string",
+          "description": "Semantic task classification (OMEN.md Line 620)",
+          "enum": [
+            "FIND",
+            "LOOKUP",
+            "SEARCH",
+            "CREATE",
+            "VERIFY",
+            "COMPILE"
+          ]
+        },
+        "tools_state": {
+          "type": "string",
+          "description": "Tool availability status (OMEN.md Line 690)",
+          "enum": [
+            "tools_ok",
+            "tools_partial",
+            "tools_down"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

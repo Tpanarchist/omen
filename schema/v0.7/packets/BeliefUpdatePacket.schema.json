@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omen.ace-framework.org/schema/v0.7/packets/BeliefUpdatePacket.schema.json",
+  "title": "BeliefUpdatePacket",
+  "description": "Updates world model based on observations, inferences, or contradiction resolution (OMEN.md Section 9.3)",
+  "allOf": [
+    {
+      "$ref": "./PacketBase.schema.json"
+    }
+  ],
+  "properties": {
+    "header": {
+      "properties": {
+        "packet_type": {
+          "const": "BeliefUpdatePacket"
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "required": ["update_type", "belief_changes"],
+      "properties": {
+        "update_type": {
+          "type": "string",
+          "enum": [
+            "new_belief",
+            "revision",
+            "contradiction_resolved",
+            "confidence_adjustment",
+            "staleness_refresh"
+          ]
+        },
+        "belief_changes": {
+          "type": "array",
+          "description": "Structured belief modifications",
+          "items": {
+            "type": "object",
+            "required": ["domain", "key", "new_value", "prior_value"],
+            "properties": {
+              "domain": {
+                "type": "string",
+                "description": "Belief domain (e.g., 'market', 'threats', 'assets')"
+              },
+              "key": {
+                "type": "string",
+                "description": "Specific belief identifier"
+              },
+              "new_value": {
+                "description": "Updated belief content"
+              },
+              "prior_value": {
+                "description": "Previous belief state (null if new)"
+              },
+              "epistemic_upgrade": {
+                "type": "boolean",
+                "description": "True if epistemic status improved (e.g., INFERRED -> OBSERVED)"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "evidence_integration": {
+          "type": "array",
+          "description": "Evidence packets that motivated this update",
+          "items": {
+            "type": "string",
+            "description": "Reference to observation packet_id"
+          }
+        },
+        "contradiction_details": {
+          "type": "object",
+          "description": "Required if update_type is contradiction_resolved",
+          "properties": {
+            "conflicting_packet_ids": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "resolution_method": {
+              "type": "string",
+              "enum": ["prefer_fresh", "prefer_higher_reliability", "escalated", "manual_override"]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "header": {
+    "packet_id": "pkt_decision_001",
+    "packet_type": "DecisionPacket",
+    "created_at": "2025-12-21T11:32:00-05:00",
+    "layer_source": 5,
+    "correlation_id": "corr_verify_001",
+    "campaign_id": "camp_OMEN_BOOT"
+  },
+  "mcp": {
+    "intent": {
+      "summary": "Decide whether to verify intel before acting on potential market opportunity",
+      "scope": "market_intelligence"
+    },
+    "stakes": {
+      "impact": "MEDIUM",
+      "irreversibility": "REVERSIBLE",
+      "uncertainty": "HIGH",
+      "adversariality": "CONTESTED",
+      "stakes_level": "MEDIUM"
+    },
+    "quality": {
+      "quality_tier": "PAR",
+      "satisficing_mode": true,
+      "definition_of_done": {
+        "text": "Have at least one fresh observation for the key market assumption",
+        "checks": ["fresh_market_data_collected", "price_assumption_verified"]
+      },
+      "verification_requirement": "VERIFY_ONE"
+    },
+    "budgets": {
+      "token_budget": 900,
+      "tool_call_budget": 2,
+      "time_budget_seconds": 90,
+      "risk_budget": {
+        "envelope": "low",
+        "max_loss": "5M ISK"
+      }
+    },
+    "epistemics": {
+      "status": "HYPOTHESIZED",
+      "confidence": 0.45,
+      "calibration_note": "Uncertainty high due to stale market data; no fresh observation yet",
+      "freshness_class": "OPERATIONAL",
+      "stale_if_older_than_seconds": 1800,
+      "assumptions": [
+        "Tritanium price still above 5 ISK/unit",
+        "Local market volume supports our trade size"
+      ]
+    },
+    "evidence": {
+      "evidence_refs": [],
+      "evidence_absent_reason": "No tool read executed yet in this episode"
+    },
+    "routing": {
+      "task_class": "VERIFY",
+      "tools_state": "tools_ok"
+    }
+  },
+  "payload": {
+    "decision_outcome": "VERIFY_FIRST",
+    "decision_summary": "Verify the load-bearing market price assumption with one tool read before committing to trade execution.",
+    "chosen_option": {
+      "option_id": "opt_verify_price",
+      "description": "Query market API for current Tritanium prices",
+      "expected_value": 0.85,
+      "risk_profile": "minimal"
+    },
+    "rejected_alternatives": [
+      {
+        "option_id": "opt_act_now",
+        "rejection_reason": "Stakes MEDIUM + uncertainty HIGH + stale data = verify-first per Q-POL"
+      },
+      {
+        "option_id": "opt_escalate",
+        "rejection_reason": "Tools available and budget sufficient; escalation unnecessary"
+      }
+    ],
+    "constraints_satisfied": {
+      "constitutional_check": true,
+      "budget_check": true,
+      "tier_check": true,
+      "verification_check": false
+    },
+    "load_bearing_assumptions": [
+      {
+        "assumption": "Tritanium price still above 5 ISK/unit",
+        "verified": false
+      }
+    ],
+    "failure_modes": [
+      {
+        "mode": "Market API timeout or partial data",
+        "mitigation": "Retry once; escalate if both attempts fail"
+      }
+    ]
+  }
+}

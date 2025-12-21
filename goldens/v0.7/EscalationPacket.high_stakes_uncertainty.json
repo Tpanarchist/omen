@@ -1,0 +1,145 @@
+{
+  "header": {
+    "packet_id": "pkt_escalate_001",
+    "packet_type": "EscalationPacket",
+    "created_at": "2025-12-21T14:30:00-05:00",
+    "layer_source": 5,
+    "correlation_id": "corr_escalate_001",
+    "campaign_id": "camp_OMEN_BOOT"
+  },
+  "mcp": {
+    "intent": {
+      "summary": "Escalate decision on potential hostile fleet engagement",
+      "scope": "threat_response"
+    },
+    "stakes": {
+      "impact": "CRITICAL",
+      "irreversibility": "IRREVERSIBLE",
+      "uncertainty": "HIGH",
+      "adversariality": "HOSTILE",
+      "stakes_level": "CRITICAL"
+    },
+    "quality": {
+      "quality_tier": "SUPERB",
+      "satisficing_mode": false,
+      "definition_of_done": {
+        "text": "Human decision received on engagement strategy",
+        "checks": ["user_response_received", "decision_logged"]
+      },
+      "verification_requirement": "VERIFY_ALL"
+    },
+    "budgets": {
+      "token_budget": 2000,
+      "tool_call_budget": 5,
+      "time_budget_seconds": 300,
+      "risk_budget": {
+        "envelope": "critical",
+        "max_loss": "ship + pod + implants (~2B ISK)"
+      }
+    },
+    "epistemics": {
+      "status": "INFERRED",
+      "confidence": 0.35,
+      "calibration_note": "Critical stakes + high uncertainty + partial tool data = escalation mandatory",
+      "freshness_class": "REALTIME",
+      "stale_if_older_than_seconds": 60,
+      "assumptions": [
+        "Hostile fleet composition unclear",
+        "Escape route viability unknown",
+        "Potential losses could be catastrophic"
+      ]
+    },
+    "evidence": {
+      "evidence_refs": [
+        {
+          "ref_type": "user_observation",
+          "ref_id": "obs://dscan_20251221_1428",
+          "timestamp": "2025-12-21T14:28:00-05:00",
+          "reliability_score": 0.85
+        },
+        {
+          "ref_type": "tool_output",
+          "ref_id": "tool://intel_feed/hostile_alert_20251221_1429",
+          "timestamp": "2025-12-21T14:29:00-05:00",
+          "reliability_score": 0.70
+        }
+      ],
+      "evidence_absent_reason": null
+    },
+    "routing": {
+      "task_class": "VERIFY",
+      "tools_state": "tools_partial"
+    }
+  },
+  "payload": {
+    "escalation_trigger": "high_stakes_high_uncertainty",
+    "top_options": [
+      {
+        "option_id": "opt_immediate_dock",
+        "description": "Dock at nearest station immediately",
+        "pros": [
+          "Guaranteed safety if successful",
+          "Preserves ship and pod"
+        ],
+        "cons": [
+          "May not reach station if scrambled",
+          "Abandons current operation"
+        ],
+        "risk_summary": "Low risk if warp successful; catastrophic if caught"
+      },
+      {
+        "option_id": "opt_cloak_observe",
+        "description": "Activate covert ops cloak and monitor situation",
+        "pros": [
+          "Gather more intel before committing",
+          "Retain operational flexibility"
+        ],
+        "cons": [
+          "May be decloaked by hostiles",
+          "Delays escape if situation deteriorates"
+        ],
+        "risk_summary": "Moderate risk; requires precise execution"
+      },
+      {
+        "option_id": "opt_evasive_maneuvers",
+        "description": "Execute pre-planned evasion route Alpha-7",
+        "pros": [
+          "Designed for this threat profile",
+          "Multiple fallback waypoints"
+        ],
+        "cons": [
+          "Route may be compromised",
+          "Requires several minutes to complete"
+        ],
+        "risk_summary": "Moderate-high risk; depends on unknown hostile capabilities"
+      }
+    ],
+    "evidence_gaps": [
+      {
+        "gap": "Hostile fleet exact composition and capabilities",
+        "impact_if_unknown": "Cannot assess tackle/DPS threat accurately",
+        "verification_method": "D-scan analysis or intel network query"
+      },
+      {
+        "gap": "Current system gate/station camp status",
+        "impact_if_unknown": "May warp into additional hostiles",
+        "verification_method": "Scout network or recent killboard data"
+      },
+      {
+        "gap": "Friendly backup availability and ETA",
+        "impact_if_unknown": "Cannot plan for reinforcement or bait scenario",
+        "verification_method": "Fleet comms check"
+      }
+    ],
+    "recommended_next_step": {
+      "step": "opt_immediate_dock with contingency cloak if scrambled",
+      "rationale": "CRITICAL stakes + IRREVERSIBLE + HIGH uncertainty = bias toward maximum safety; dock is highest survival probability",
+      "estimated_cost": {
+        "time_seconds": 30,
+        "tokens": 200,
+        "tool_calls": 0
+      }
+    },
+    "blocking_decision_packet_id": "pkt_decision_threat_001"
+  }
+}

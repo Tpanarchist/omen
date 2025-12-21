@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://omen.ace-framework.org/schema/v0.7/packets/TaskResultPacket.schema.json",
+  "title": "TaskResultPacket",
+  "description": "Layer 6 result reporting task success, failure, or cancellation (OMEN.md Section 9.3)",
+  "allOf": [
+    {
+      "$ref": "./PacketBase.schema.json"
+    }
+  ],
+  "properties": {
+    "header": {
+      "properties": {
+        "packet_type": {
+          "const": "TaskResultPacket"
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "required": ["task_id", "directive_packet_id", "result_status"],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "Task identifier from TaskDirective",
+          "pattern": "^task_[a-zA-Z0-9_-]+$"
+        },
+        "directive_packet_id": {
+          "type": "string",
+          "description": "Reference to originating TaskDirectivePacket",
+          "pattern": "^pkt_[a-zA-Z0-9_-]+$"
+        },
+        "result_status": {
+          "type": "string",
+          "description": "Outcome classification (OMEN.md Line 837)",
+          "enum": ["SUCCESS", "FAILURE", "CANCELLED"]
+        },
+        "result_data": {
+          "description": "Tool output or computation result (null if failed/cancelled)"
+        },
+        "error_details": {
+          "type": "object",
+          "description": "Required if result_status is FAILURE",
+          "properties": {
+            "error_code": {"type": "string"},
+            "error_message": {"type": "string"},
+            "is_transient": {"type": "boolean"},
+            "retry_recommended": {"type": "boolean"}
+          }
+        },
+        "execution_metadata": {
+          "type": "object",
+          "description": "Performance and resource usage metrics",
+          "properties": {
+            "execution_time_ms": {"type": "number", "minimum": 0},
+            "tokens_used": {"type": "integer", "minimum": 0},
+            "tool_calls_used": {"type": "integer", "minimum": 0},
+            "retry_count": {"type": "integer", "minimum": 0}
+          }
+        },
+        "observation_packet_id": {
+          "type": "string",
+          "description": "Optional reference to ObservationPacket if result converted to observation",
+          "pattern": "^pkt_[a-zA-Z0-9_-]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "header": {
+    "packet_id": "pkt_decision_invalid_001",
+    "packet_type": "DecisionPacket",
+    "created_at": "2025-12-21T15:00:00-05:00",
+    "layer_source": 5,
+    "correlation_id": "corr_invalid_001"
+  },
+  "mcp": {
+    "intent": {
+      "summary": "Attempt to authorize action with insufficient quality tier",
+      "scope": "invalid_test"
+    },
+    "stakes": {
+      "impact": "HIGH",
+      "irreversibility": "IRREVERSIBLE",
+      "uncertainty": "HIGH",
+      "adversariality": "HOSTILE",
+      "stakes_level": "HIGH"
+    },
+    "quality": {
+      "quality_tier": "SUBPAR",
+      "satisficing_mode": true,
+      "definition_of_done": {
+        "text": "Action completed",
+        "checks": ["done"]
+      },
+      "verification_requirement": "OPTIONAL"
+    },
+    "budgets": {
+      "token_budget": 100,
+      "tool_call_budget": 1,
+      "time_budget_seconds": 30,
+      "risk_budget": {
+        "envelope": "low",
+        "max_loss": "1M ISK"
+      }
+    },
+    "epistemics": {
+      "status": "HYPOTHESIZED",
+      "confidence": 0.25,
+      "calibration_note": "Very low confidence; speculative only",
+      "freshness_class": "ARCHIVAL",
+      "assumptions": ["Unverified assumption"]
+    },
+    "evidence": {
+      "evidence_refs": [],
+      "evidence_absent_reason": "No evidence available"
+    },
+    "routing": {
+      "task_class": "CREATE",
+      "tools_state": "tools_ok"
+    }
+  },
+  "payload": {
+    "decision_outcome": "ACT",
+    "decision_summary": "INVALID: SUBPAR tier attempting to authorize external action",
+    "constraints_satisfied": {
+      "constitutional_check": false,
+      "budget_check": false,
+      "tier_check": false,
+      "verification_check": false
+    },
+    "load_bearing_assumptions": []
+  },
+  "_validation_notes": {
+    "expected_violation": "SUBPAR never authorizes external action (OMEN.md Line 697)",
+    "should_fail_with": "Cross-policy invariant #2 violation",
+    "correct_outcome": "Must be VERIFY_FIRST or ESCALATE"
+  }
+}
