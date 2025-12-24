@@ -25,6 +25,15 @@ from omen.schemas.mcp import (
 
 from omen.schemas.header import PacketHeader
 
+from omen.schemas.packets import (
+    # Observation
+    ObservationPacket,
+    ObservationPayload,
+    # Belief Update
+    BeliefUpdatePacket,
+    BeliefUpdatePayload,
+)
+
 __all__ = [
     # Atomic structures
     "Intent",
@@ -41,4 +50,9 @@ __all__ = [
     "MCP",
     # Packet header
     "PacketHeader",
+    # Packets
+    "ObservationPacket",
+    "ObservationPayload",
+    "BeliefUpdatePacket",
+    "BeliefUpdatePayload",
 ]
