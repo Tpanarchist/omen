@@ -23,6 +23,8 @@ from omen.schemas.mcp import (
     MCP,
 )
 
+from omen.schemas.header import PacketHeader
+
 __all__ = [
     # Atomic structures
     "Intent",
@@ -37,4 +39,6 @@ __all__ = [
     "Routing",
     # MCP envelope
     "MCP",
+    # Packet header
+    "PacketHeader",
 ]
