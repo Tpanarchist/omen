@@ -38,6 +38,12 @@ from omen.schemas.packets import (
     # Verification Plan
     VerificationPlanPacket,
     VerificationPlanPayload,
+    # Task Directive
+    TaskDirectivePacket,
+    TaskDirectivePayload,
+    # Task Result
+    TaskResultPacket,
+    TaskResultPayload,
 )
 
 __all__ = [
@@ -65,4 +71,8 @@ __all__ = [
     "DecisionPayload",
     "VerificationPlanPacket",
     "VerificationPlanPayload",
+    "TaskDirectivePacket",
+    "TaskDirectivePayload",
+    "TaskResultPacket",
+    "TaskResultPayload",
 ]
