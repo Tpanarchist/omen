@@ -38,6 +38,9 @@ from omen.schemas.packets import (
     # Verification Plan
     VerificationPlanPacket,
     VerificationPlanPayload,
+    # Tool Authorization
+    ToolAuthorizationToken,
+    ToolAuthorizationPayload,
     # Task Directive
     TaskDirectivePacket,
     TaskDirectivePayload,
@@ -71,6 +74,8 @@ __all__ = [
     "DecisionPayload",
     "VerificationPlanPacket",
     "VerificationPlanPayload",
+    "ToolAuthorizationToken",
+    "ToolAuthorizationPayload",
     "TaskDirectivePacket",
     "TaskDirectivePayload",
     "TaskResultPacket",

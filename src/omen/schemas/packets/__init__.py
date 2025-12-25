@@ -22,6 +22,7 @@ from omen.schemas.packets.observation import ObservationPacket, ObservationPaylo
 from omen.schemas.packets.belief_update import BeliefUpdatePacket, BeliefUpdatePayload
 from omen.schemas.packets.decision import DecisionPacket, DecisionPayload
 from omen.schemas.packets.verification_plan import VerificationPlanPacket, VerificationPlanPayload
+from omen.schemas.packets.tool_authorization import ToolAuthorizationToken, ToolAuthorizationPayload
 from omen.schemas.packets.task_directive import TaskDirectivePacket, TaskDirectivePayload
 from omen.schemas.packets.task_result import TaskResultPacket, TaskResultPayload
 
@@ -38,6 +39,9 @@ __all__ = [
     # Verification Plan
     "VerificationPlanPacket",
     "VerificationPlanPayload",
+    # Tool Authorization
+    "ToolAuthorizationToken",
+    "ToolAuthorizationPayload",
     # Task Directive
     "TaskDirectivePacket",
     "TaskDirectivePayload",
