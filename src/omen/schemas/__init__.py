@@ -32,6 +32,12 @@ from omen.schemas.packets import (
     # Belief Update
     BeliefUpdatePacket,
     BeliefUpdatePayload,
+    # Decision
+    DecisionPacket,
+    DecisionPayload,
+    # Verification Plan
+    VerificationPlanPacket,
+    VerificationPlanPayload,
 )
 
 __all__ = [
@@ -55,4 +61,8 @@ __all__ = [
     "ObservationPayload",
     "BeliefUpdatePacket",
     "BeliefUpdatePayload",
+    "DecisionPacket",
+    "DecisionPayload",
+    "VerificationPlanPacket",
+    "VerificationPlanPayload",
 ]

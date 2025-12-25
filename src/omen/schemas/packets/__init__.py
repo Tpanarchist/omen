@@ -20,6 +20,8 @@ Packet types:
 
 from omen.schemas.packets.observation import ObservationPacket, ObservationPayload
 from omen.schemas.packets.belief_update import BeliefUpdatePacket, BeliefUpdatePayload
+from omen.schemas.packets.decision import DecisionPacket, DecisionPayload
+from omen.schemas.packets.verification_plan import VerificationPlanPacket, VerificationPlanPayload
 
 __all__ = [
     # Observation
@@ -28,4 +30,10 @@ __all__ = [
     # Belief Update
     "BeliefUpdatePacket",
     "BeliefUpdatePayload",
+    # Decision
+    "DecisionPacket",
+    "DecisionPayload",
+    # Verification Plan
+    "VerificationPlanPacket",
+    "VerificationPlanPayload",
 ]
