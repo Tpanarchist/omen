@@ -47,6 +47,12 @@ from omen.schemas.packets import (
     # Task Result
     TaskResultPacket,
     TaskResultPayload,
+    # Escalation
+    EscalationPacket,
+    EscalationPayload,
+    # Integrity Alert
+    IntegrityAlertPacket,
+    IntegrityAlertPayload,
 )
 
 __all__ = [
@@ -65,7 +71,7 @@ __all__ = [
     "MCP",
     # Packet header
     "PacketHeader",
-    # Packets
+    # Packets (all 9)
     "ObservationPacket",
     "ObservationPayload",
     "BeliefUpdatePacket",
@@ -80,4 +86,8 @@ __all__ = [
     "TaskDirectivePayload",
     "TaskResultPacket",
     "TaskResultPayload",
+    "EscalationPacket",
+    "EscalationPayload",
+    "IntegrityAlertPacket",
+    "IntegrityAlertPayload",
 ]

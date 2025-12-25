@@ -25,6 +25,8 @@ from omen.schemas.packets.verification_plan import VerificationPlanPacket, Verif
 from omen.schemas.packets.tool_authorization import ToolAuthorizationToken, ToolAuthorizationPayload
 from omen.schemas.packets.task_directive import TaskDirectivePacket, TaskDirectivePayload
 from omen.schemas.packets.task_result import TaskResultPacket, TaskResultPayload
+from omen.schemas.packets.escalation import EscalationPacket, EscalationPayload
+from omen.schemas.packets.integrity_alert import IntegrityAlertPacket, IntegrityAlertPayload
 
 __all__ = [
     # Observation
@@ -48,4 +50,10 @@ __all__ = [
     # Task Result
     "TaskResultPacket",
     "TaskResultPayload",
+    # Escalation
+    "EscalationPacket",
+    "EscalationPayload",
+    # Integrity Alert
+    "IntegrityAlertPacket",
+    "IntegrityAlertPayload",
 ]
