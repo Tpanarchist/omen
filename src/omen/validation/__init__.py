@@ -22,6 +22,12 @@ from omen.validation.fsm_validator import (
     create_fsm_validator,
 )
 
+from omen.validation.invariant_validator import (
+    InvariantValidator,
+    BudgetLedger,
+    create_invariant_validator,
+)
+
 __all__ = [
     # Schema validation
     "SchemaValidator",
@@ -35,4 +41,8 @@ __all__ = [
     "LEGAL_TRANSITIONS",
     "packet_implies_state",
     "create_fsm_validator",
+    # Invariant validation
+    "InvariantValidator",
+    "BudgetLedger",
+    "create_invariant_validator",
 ]
