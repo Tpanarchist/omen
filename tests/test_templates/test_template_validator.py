@@ -18,8 +18,8 @@ from omen.templates import (
     TemplateValidator,
     create_template_validator,
     get_all_templates,
-    LAYER_PACKET_CONTRACTS,
 )
+from omen.layers import LAYER_CONTRACTS
 
 
 @pytest.fixture
@@ -250,7 +250,7 @@ class TestLayerContracts:
     def test_all_layer_contracts_defined(self):
         """All layers have defined contracts."""
         for layer in LayerSource:
-            assert layer in LAYER_PACKET_CONTRACTS
+            assert layer in LAYER_CONTRACTS
 
 
 class TestReachability:

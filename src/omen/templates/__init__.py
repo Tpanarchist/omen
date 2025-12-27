@@ -33,7 +33,6 @@ from omen.templates.validator import (
     TemplateValidator,
     TemplateValidationResult,
     TemplateValidationError,
-    LAYER_PACKET_CONTRACTS,
     create_template_validator,
 )
 
@@ -57,6 +56,5 @@ __all__ = [
     "TemplateValidator",
     "TemplateValidationResult",
     "TemplateValidationError",
-    "LAYER_PACKET_CONTRACTS",
     "create_template_validator",
 ]

@@ -13,34 +13,7 @@ from typing import Any
 from omen.vocabulary import LayerSource, PacketType, FSMState
 from omen.templates.models import EpisodeTemplate, TemplateStep
 from omen.validation.fsm_validator import LEGAL_TRANSITIONS
-
-
-# =============================================================================
-# LAYER CONTRACTS (§11.1)
-# =============================================================================
-
-LAYER_PACKET_CONTRACTS: dict[LayerSource, set[PacketType | None]] = {
-    LayerSource.LAYER_1: {PacketType.INTEGRITY_ALERT, None},
-    LayerSource.LAYER_2: {PacketType.BELIEF_UPDATE, None},
-    LayerSource.LAYER_3: {PacketType.BELIEF_UPDATE, None},
-    LayerSource.LAYER_4: {PacketType.BELIEF_UPDATE, None},
-    LayerSource.LAYER_5: {
-        PacketType.DECISION,
-        PacketType.VERIFICATION_PLAN,
-        PacketType.TOOL_AUTHORIZATION,
-        PacketType.TASK_DIRECTIVE,
-        PacketType.ESCALATION,
-        PacketType.BELIEF_UPDATE,
-        None,
-    },
-    LayerSource.LAYER_6: {
-        PacketType.OBSERVATION,
-        PacketType.TASK_RESULT,
-        PacketType.BELIEF_UPDATE,
-        None,
-    },
-    LayerSource.INTEGRITY: {PacketType.INTEGRITY_ALERT, None},
-}
+from omen.layers.contracts import get_contract
 
 
 # =============================================================================
@@ -195,15 +168,16 @@ class TemplateValidator:
         errors = []
         
         for step in template.steps:
-            layer = step.owner_layer
-            packet_type = step.packet_type
+            # Terminal steps don't emit packets
+            if step.packet_type is None:
+                continue
             
-            allowed = LAYER_PACKET_CONTRACTS.get(layer, set())
-            if packet_type not in allowed:
+            contract = get_contract(step.owner_layer)
+            if not contract.allows_emit(step.packet_type):
                 errors.append(TemplateValidationError(
                     rule="layer_contract",
                     step_id=step.step_id,
-                    message=f"Layer {layer.value} cannot emit {packet_type}",
+                    message=f"Layer {step.owner_layer.value} cannot emit {step.packet_type.value}",
                 ))
         
         return errors
