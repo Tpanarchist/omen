@@ -266,3 +266,35 @@ class TaskResultStatus(str, Enum):
     SUCCESS = "SUCCESS"
     FAILURE = "FAILURE"
     CANCELLED = "CANCELLED"
+
+
+# =============================================================================
+# EPISODE TEMPLATES — OMEN.md §11
+# =============================================================================
+
+class TemplateID(str, Enum):
+    """
+    Canonical template identifiers.
+    
+    Spec: OMEN.md §11.3 "Canonical templates (A-G)"
+    """
+    TEMPLATE_A = "TEMPLATE_A"  # Grounding Loop
+    TEMPLATE_B = "TEMPLATE_B"  # Verification Loop
+    TEMPLATE_C = "TEMPLATE_C"  # Read-Only Act
+    TEMPLATE_D = "TEMPLATE_D"  # Write Act
+    TEMPLATE_E = "TEMPLATE_E"  # Escalation
+    TEMPLATE_F = "TEMPLATE_F"  # Degraded Tools
+    TEMPLATE_G = "TEMPLATE_G"  # Compile-to-Code
+
+
+class IntentClass(str, Enum):
+    """
+    Intent classification for episode templates.
+    
+    Spec: OMEN.md §11.2 "intent_class"
+    """
+    SENSE = "SENSE"        # Grounding/observation focus
+    VERIFY = "VERIFY"      # Verification loop
+    ACT = "ACT"            # Action execution
+    COMPILE = "COMPILE"    # Code compilation workflow
+    ESCALATE = "ESCALATE"  # Human handoff

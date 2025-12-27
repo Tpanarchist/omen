@@ -29,6 +29,9 @@ from omen.vocabulary.enums import (
     # Decisions
     DecisionOutcome,
     TaskResultStatus,
+    # Templates
+    TemplateID,
+    IntentClass,
 )
 
 __all__ = [
@@ -56,4 +59,7 @@ __all__ = [
     # Decisions
     "DecisionOutcome",
     "TaskResultStatus",
+    # Templates
+    "TemplateID",
+    "IntentClass",
 ]
