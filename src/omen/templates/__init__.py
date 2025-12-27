@@ -17,9 +17,33 @@ from omen.templates.models import (
     TemplateConstraints,
     EpisodeTemplate,
 )
+from omen.templates.canonical import (
+    TEMPLATE_A,
+    TEMPLATE_B,
+    TEMPLATE_C,
+    TEMPLATE_D,
+    TEMPLATE_E,
+    TEMPLATE_F,
+    TEMPLATE_G,
+    CANONICAL_TEMPLATES,
+    get_template,
+    get_all_templates,
+)
 
 __all__ = [
+    # Models
     "TemplateStep",
     "TemplateConstraints",
     "EpisodeTemplate",
+    # Canonical templates
+    "TEMPLATE_A",
+    "TEMPLATE_B",
+    "TEMPLATE_C",
+    "TEMPLATE_D",
+    "TEMPLATE_E",
+    "TEMPLATE_F",
+    "TEMPLATE_G",
+    "CANONICAL_TEMPLATES",
+    "get_template",
+    "get_all_templates",
 ]
