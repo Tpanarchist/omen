@@ -29,6 +29,13 @@ from omen.templates.canonical import (
     get_template,
     get_all_templates,
 )
+from omen.templates.validator import (
+    TemplateValidator,
+    TemplateValidationResult,
+    TemplateValidationError,
+    LAYER_PACKET_CONTRACTS,
+    create_template_validator,
+)
 
 __all__ = [
     # Models
@@ -46,4 +53,10 @@ __all__ = [
     "CANONICAL_TEMPLATES",
     "get_template",
     "get_all_templates",
+    # Validator
+    "TemplateValidator",
+    "TemplateValidationResult",
+    "TemplateValidationError",
+    "LAYER_PACKET_CONTRACTS",
+    "create_template_validator",
 ]

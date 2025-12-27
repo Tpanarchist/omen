@@ -31,24 +31,29 @@ LEGAL_TRANSITIONS: dict[FSMState, set[FSMState]] = {
     },
     FSMState.S1_SENSE: {
         FSMState.S2_MODEL,      # Update world model
+        FSMState.S3_DECIDE,     # Skip model, immediate decision (degraded mode)
         FSMState.S1_SENSE,      # Continue sensing
         FSMState.S9_SAFEMODE,
     },
     FSMState.S2_MODEL: {
         FSMState.S3_DECIDE,     # Make decision
         FSMState.S1_SENSE,      # Need more data
+        FSMState.S7_REVIEW,     # Review beliefs, no new decision needed
+        FSMState.S0_IDLE,       # Model stable, return to idle
         FSMState.S9_SAFEMODE,
     },
     FSMState.S3_DECIDE: {
         FSMState.S4_VERIFY,     # VERIFY_FIRST outcome
         FSMState.S5_AUTHORIZE,  # Need token for WRITE
         FSMState.S6_EXECUTE,    # ACT with READ-only
+        FSMState.S7_REVIEW,     # DEFER outcome - review decision, no execution
         FSMState.S8_ESCALATED,  # ESCALATE outcome
-        FSMState.S0_IDLE,       # DEFER outcome
+        FSMState.S0_IDLE,       # DEFER outcome - skip review
         FSMState.S9_SAFEMODE,
     },
     FSMState.S4_VERIFY: {
         FSMState.S2_MODEL,      # Update beliefs from verification
+        FSMState.S5_AUTHORIZE,  # Verification passed, request token for write
         FSMState.S6_EXECUTE,    # Execute verification reads
         FSMState.S8_ESCALATED,  # Verification impossible, escalate
         FSMState.S9_SAFEMODE,
@@ -60,6 +65,7 @@ LEGAL_TRANSITIONS: dict[FSMState, set[FSMState]] = {
     },
     FSMState.S6_EXECUTE: {
         FSMState.S7_REVIEW,     # Review results
+        FSMState.S2_MODEL,      # Update beliefs from results
         FSMState.S6_EXECUTE,    # Continue execution
         FSMState.S9_SAFEMODE,
     },
