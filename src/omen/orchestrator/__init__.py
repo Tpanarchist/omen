@@ -1,10 +1,15 @@
 """
 Orchestrator — Episode execution coordination.
 
-- Episode ledger (state tracking)
-- Layer pool (layer management)
-- Episode runner (step execution)
-- Orchestrator (high-level API)
+The orchestrator is the main entry point for running OMEN episodes.
+
+Usage:
+    from omen.orchestrator import create_orchestrator
+    from omen.vocabulary import TemplateID
+    
+    orchestrator = create_orchestrator()
+    result = orchestrator.run_template(TemplateID.TEMPLATE_A)
+    print(f"Success: {result.success}, Steps: {result.step_count}")
 
 Spec: OMEN.md §10.4, §10.5, §11.4
 """
@@ -28,6 +33,12 @@ from omen.orchestrator.runner import (
     EpisodeRunner,
     create_runner,
 )
+from omen.orchestrator.orchestrator import (
+    OrchestratorConfig,
+    Orchestrator,
+    create_orchestrator,
+    create_mock_orchestrator,
+)
 
 __all__ = [
     # Ledger
@@ -46,4 +57,9 @@ __all__ = [
     "EpisodeResult",
     "EpisodeRunner",
     "create_runner",
+    # Orchestrator
+    "OrchestratorConfig",
+    "Orchestrator",
+    "create_orchestrator",
+    "create_mock_orchestrator",
 ]
