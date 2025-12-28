@@ -16,11 +16,23 @@ from omen.orchestrator.ledger import (
     EpisodeLedger,
     create_ledger,
 )
+from omen.orchestrator.pool import (
+    ConfigurableLayer,
+    LayerPool,
+    create_layer_pool,
+    create_mock_layer_pool,
+)
 
 __all__ = [
+    # Ledger
     "BudgetState",
     "ActiveToken",
     "OpenDirective",
     "EpisodeLedger",
     "create_ledger",
+    # Pool
+    "ConfigurableLayer",
+    "LayerPool",
+    "create_layer_pool",
+    "create_mock_layer_pool",
 ]
