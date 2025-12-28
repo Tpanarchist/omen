@@ -9,7 +9,7 @@ Spec: OMEN.md §6, §11.1
 import json
 import re
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 from omen.vocabulary import LayerSource, PacketType
 from omen.layers import (
@@ -22,6 +22,10 @@ from omen.layers import (
     LAYER_PROMPTS,
     LAYER_NAMES,
 )
+
+if TYPE_CHECKING:
+    from omen.tools import ToolRegistry, ToolResult
+    from omen.orchestrator.ledger import ActiveToken
 
 
 # =============================================================================
@@ -41,6 +45,7 @@ class ConfigurableLayer(Layer):
         llm_client: LLMClient,
         system_prompt: str,
         response_parser: Callable[[str, LayerInput], list[Any]] | None = None,
+        tool_registry: "ToolRegistry | None" = None,
         **kwargs
     ):
         """
@@ -51,10 +56,12 @@ class ConfigurableLayer(Layer):
             llm_client: Client for LLM calls
             system_prompt: The system prompt for this layer
             response_parser: Optional custom parser for LLM responses
+            tool_registry: Optional tool registry for L6 tool execution
         """
         super().__init__(layer_id, llm_client, **kwargs)
         self._system_prompt = system_prompt
         self._response_parser = response_parser or self._default_parser
+        self._tool_registry = tool_registry
     
     def get_system_prompt(self) -> str:
         """Return the configured system prompt."""
@@ -140,6 +147,34 @@ class ConfigurableLayer(Layer):
         obj["_raw"] = obj.copy()
         
         return obj
+    
+    def execute_tool(
+        self,
+        tool_name: str,
+        params: dict[str, Any],
+        token: "ActiveToken | None" = None,
+    ) -> "ToolResult":
+        """
+        Execute a tool from the registry.
+        
+        Only available for L6. Raises RuntimeError if tool_registry not set.
+        
+        Args:
+            tool_name: Name of tool to execute
+            params: Parameters for the tool
+            token: Authorization token for WRITE tools
+        
+        Returns:
+            ToolResult with data or error
+        """
+        if self._tool_registry is None:
+            from omen.tools import ToolResult
+            return ToolResult.fail("No tool registry configured for this layer")
+        
+        return self._tool_registry.execute(tool_name, params, token)
+        obj["_raw"] = obj.copy()
+        
+        return obj
 
 
 # =============================================================================
@@ -200,6 +235,7 @@ def create_layer_pool(
     include_layers: list[LayerSource] | None = None,
     custom_prompts: dict[str, str] | None = None,
     custom_parsers: dict[LayerSource, Callable] | None = None,
+    tool_registry: "ToolRegistry | None" = None,
 ) -> LayerPool:
     """
     Factory for creating a configured layer pool.
@@ -209,6 +245,7 @@ def create_layer_pool(
         include_layers: Which layers to include (defaults to L1-L6, no Integrity)
         custom_prompts: Override prompts by layer key (e.g., "LAYER_1")
         custom_parsers: Custom response parsers by LayerSource
+        tool_registry: Optional tool registry for L6 tool execution
     
     Returns:
         Configured LayerPool with layers registered
@@ -246,12 +283,16 @@ def create_layer_pool(
         # Get parser (custom or default)
         parser = custom_parsers.get(layer_id)
         
+        # Only L6 gets tool registry
+        registry = tool_registry if layer_id == LayerSource.LAYER_6 else None
+        
         # Create and register layer
         layer = ConfigurableLayer(
             layer_id=layer_id,
             llm_client=client,
             system_prompt=prompt,
             response_parser=parser,
+            tool_registry=registry,
         )
         pool.register_layer(layer)
     

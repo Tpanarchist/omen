@@ -94,7 +94,7 @@ class TestValidatorBasics:
         """validate_all checks multiple templates."""
         templates = get_all_templates()
         results = validator.validate_all(templates)
-        assert len(results) == 7
+        assert len(results) == 8
         for tid, result in results.items():
             assert result.template_id == tid
 

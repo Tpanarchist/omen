@@ -55,6 +55,12 @@ from omen.orchestrator.runner import (
     EpisodeResult,
     create_runner,
 )
+from omen.episode import (
+    EpisodeStore,
+    EpisodeRecord,
+    StepRecord,
+    PacketRecord,
+)
 
 
 # =============================================================================
@@ -86,6 +92,10 @@ class OrchestratorConfig:
     
     # Validation
     validate_templates: bool = True
+    
+    # Persistence
+    episode_store: EpisodeStore | None = None
+    auto_save: bool = True  # Save episodes on completion
 
 
 # =============================================================================
@@ -116,6 +126,7 @@ class Orchestrator:
         layer_pool: LayerPool | None = None,
         compiler: TemplateCompiler | None = None,
         validator: TemplateValidator | None = None,
+        episode_store: EpisodeStore | None = None,
     ):
         """
         Initialize orchestrator.
@@ -155,6 +166,9 @@ class Orchestrator:
             southbound_bus=self.southbound_bus,
             max_steps=self.config.max_steps,
         )
+        
+        # Set up episode storage
+        self.episode_store = episode_store or self.config.episode_store
     
     def run_template(
         self,
@@ -264,11 +278,18 @@ class Orchestrator:
         ledger = self._create_ledger(cid, context, template)
         
         # Run episode
-        return self.runner.run(
+        result = self.runner.run(
             episode=compilation.episode,
             ledger=ledger,
             initial_packets=initial_packets,
         )
+        
+        # Save episode if store configured
+        if self.episode_store and self.config.auto_save:
+            record = self._create_episode_record(result, ledger, template, context)
+            self.episode_store.save(record)
+        
+        return result
     
     def compile_template(
         self,
@@ -346,6 +367,82 @@ class Orchestrator:
                 time_budget_seconds=context.budgets.time_budget_seconds,
             ),
             template_id=template.template_id.value,
+        )
+    
+    def _create_episode_record(
+        self,
+        result: EpisodeResult,
+        ledger: EpisodeLedger,
+        template: EpisodeTemplate,
+        context: CompilationContext,
+    ) -> EpisodeRecord:
+        """Convert execution result to persistent record."""
+        from datetime import datetime
+        
+        steps = []
+        for i, step_result in enumerate(result.steps_completed):
+            steps.append(StepRecord(
+                step_id=step_result.step_id,
+                sequence_number=i,
+                layer=step_result.layer.value if hasattr(step_result.layer, 'value') else str(step_result.layer),
+                fsm_state="",  # Would need to track this in runner
+                packet_type=None,  # Would need to track this in runner
+                started_at=ledger.started_at,  # Approximate - would need per-step tracking
+                completed_at=datetime.now(),
+                success=step_result.success,
+                packets_emitted=[],
+                error=step_result.error,
+                raw_llm_response=step_result.output.raw_response if step_result.output else "",
+            ))
+        
+        return EpisodeRecord(
+            correlation_id=result.correlation_id,
+            template_id=template.template_id.value,
+            campaign_id=context.campaign_id,
+            started_at=ledger.started_at,
+            completed_at=datetime.now(),
+            success=result.success,
+            final_step=result.final_step,
+            errors=result.errors,
+            stakes_level=context.stakes.stakes_level.value,
+            quality_tier=context.quality.quality_tier.value,
+            tools_state=context.tools_state.value,
+            steps=steps,
+            packets=[],  # Would need packet capture in runner
+            budget_allocated={
+                "tokens": context.budgets.token_budget,
+                "tool_calls": context.budgets.tool_call_budget,
+                "time_seconds": context.budgets.time_budget_seconds,
+            },
+            budget_consumed={
+                "tokens": ledger.budget.tokens_consumed,
+                "tool_calls": ledger.budget.tool_calls_consumed,
+                "time_seconds": int(ledger.budget.time_consumed_seconds),
+            },
+            evidence_refs=ledger.evidence_refs,
+            assumptions=ledger.assumptions,
+            contradictions=ledger.contradiction_details,
+        )
+    
+    def get_episode(self, correlation_id: UUID) -> EpisodeRecord | None:
+        """Load a saved episode."""
+        if self.episode_store is None:
+            return None
+        return self.episode_store.load(correlation_id)
+    
+    def list_episodes(
+        self,
+        template_id: str | None = None,
+        success: bool | None = None,
+        limit: int = 100,
+    ) -> list[EpisodeRecord]:
+        """Query saved episodes."""
+        if self.episode_store is None:
+            return []
+        return self.episode_store.query(
+            template_id=template_id,
+            success=success,
+            limit=limit,
         )
 
 

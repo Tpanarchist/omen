@@ -415,6 +415,134 @@ TEMPLATE_G = EpisodeTemplate(
 
 
 # =============================================================================
+# TEMPLATE H: FULL-STACK MISSION FLOW
+# =============================================================================
+# Path: S0 → S1 → S2 → S3 → S6 → S7 → S2 → S0
+# Purpose: Exercise all 6 layers in a legitimate episode flow
+# All layers participate in standard grounding + action cycle
+
+TEMPLATE_H = EpisodeTemplate(
+    template_id=TemplateID.TEMPLATE_H,
+    name="Full-Stack Mission Flow",
+    description=(
+        "Complete episode exercising all 6 layers with proper FSM flow. "
+        "L1 provides mission context, L6 senses, L3 models capabilities, "
+        "L2 frames strategically, L4 plans, L5 decides/directs, L6 executes, "
+        "then L5/L4/L3/L2/L1 review results flowing back up."
+    ),
+    intent_class=IntentClass.ACT,
+    constraints=TemplateConstraints(
+        min_tier=QualityTier.PAR,
+        tools_state=[ToolsState.TOOLS_OK, ToolsState.TOOLS_PARTIAL],
+        write_allowed=False,  # Read-only for initial integration
+    ),
+    steps=[
+        TemplateStep(
+            step_id="idle_start",
+            owner_layer=LayerSource.LAYER_1,  # L1 sets mission posture
+            fsm_state=FSMState.S0_IDLE,
+            packet_type=None,
+            next_steps=["l6_sense"],
+        ),
+        TemplateStep(
+            step_id="l6_sense",
+            owner_layer=LayerSource.LAYER_6,  # L6 senses environment
+            fsm_state=FSMState.S1_SENSE,
+            packet_type=PacketType.OBSERVATION,
+            next_steps=["l3_model"],
+        ),
+        TemplateStep(
+            step_id="l3_model",
+            owner_layer=LayerSource.LAYER_3,  # L3 models capabilities
+            fsm_state=FSMState.S2_MODEL,
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["l2_strategy"],
+        ),
+        TemplateStep(
+            step_id="l2_strategy",
+            owner_layer=LayerSource.LAYER_2,  # L2 frames strategy
+            fsm_state=FSMState.S1_SENSE,  # L2 can sense strategic context
+            packet_type=PacketType.BELIEF_UPDATE,  # L2 emits belief updates, not observations
+            next_steps=["l4_plan"],
+        ),
+        TemplateStep(
+            step_id="l4_plan",
+            owner_layer=LayerSource.LAYER_4,  # L4 creates plan
+            fsm_state=FSMState.S2_MODEL,
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["l5_decide"],
+        ),
+        TemplateStep(
+            step_id="l5_decide",
+            owner_layer=LayerSource.LAYER_5,  # L5 makes decision
+            fsm_state=FSMState.S3_DECIDE,
+            packet_type=PacketType.DECISION,
+            next_steps=["l5_directive"],
+            bindings={"decision_outcome": "ACT"},
+        ),
+        TemplateStep(
+            step_id="l5_directive",
+            owner_layer=LayerSource.LAYER_5,  # L5 issues directive
+            fsm_state=FSMState.S6_EXECUTE,  # Directive implies execution phase
+            packet_type=PacketType.TASK_DIRECTIVE,
+            next_steps=["l6_execute"],
+        ),
+        TemplateStep(
+            step_id="l6_execute",
+            owner_layer=LayerSource.LAYER_6,  # L6 executes task
+            fsm_state=FSMState.S6_EXECUTE,
+            packet_type=PacketType.TASK_RESULT,
+            next_steps=["l5_review"],
+        ),
+        TemplateStep(
+            step_id="l5_review",
+            owner_layer=LayerSource.LAYER_5,  # L5 reviews results
+            fsm_state=FSMState.S7_REVIEW,
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["l4_assess"],
+        ),
+        TemplateStep(
+            step_id="l4_assess",
+            owner_layer=LayerSource.LAYER_4,  # L4 assesses against plan
+            fsm_state=FSMState.S2_MODEL,  # Integrate into model
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["l3_integrate"],
+        ),
+        TemplateStep(
+            step_id="l3_integrate",
+            owner_layer=LayerSource.LAYER_3,  # L3 updates capability model
+            fsm_state=FSMState.S1_SENSE,  # Sense new capabilities
+            packet_type=PacketType.BELIEF_UPDATE,  # L3 emits belief updates, not observations
+            next_steps=["l2_update"],
+        ),
+        TemplateStep(
+            step_id="l2_update",
+            owner_layer=LayerSource.LAYER_2,  # L2 updates strategic frame
+            fsm_state=FSMState.S2_MODEL,
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["l1_review"],
+        ),
+        TemplateStep(
+            step_id="l1_review",
+            owner_layer=LayerSource.LAYER_1,  # L1 constitutional review
+            fsm_state=FSMState.S7_REVIEW,  # Final review
+            packet_type=PacketType.BELIEF_UPDATE,
+            next_steps=["idle_end"],
+        ),
+        TemplateStep(
+            step_id="idle_end",
+            owner_layer=LayerSource.LAYER_1,
+            fsm_state=FSMState.S0_IDLE,
+            packet_type=None,
+            next_steps=[],
+        ),
+    ],
+    entry_step="idle_start",
+    exit_steps=["idle_end"],
+)
+
+
+# =============================================================================
 # CANONICAL TEMPLATE REGISTRY
 # =============================================================================
 
@@ -426,6 +554,7 @@ CANONICAL_TEMPLATES: dict[TemplateID, EpisodeTemplate] = {
     TemplateID.TEMPLATE_E: TEMPLATE_E,
     TemplateID.TEMPLATE_F: TEMPLATE_F,
     TemplateID.TEMPLATE_G: TEMPLATE_G,
+    TemplateID.TEMPLATE_H: TEMPLATE_H,
 }
 
 

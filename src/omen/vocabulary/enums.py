@@ -277,6 +277,7 @@ class TemplateID(str, Enum):
     Canonical template identifiers.
     
     Spec: OMEN.md §11.3 "Canonical templates (A-G)"
+    Extended: Template H for full-stack integration testing
     """
     TEMPLATE_A = "TEMPLATE_A"  # Grounding Loop
     TEMPLATE_B = "TEMPLATE_B"  # Verification Loop
@@ -285,6 +286,7 @@ class TemplateID(str, Enum):
     TEMPLATE_E = "TEMPLATE_E"  # Escalation
     TEMPLATE_F = "TEMPLATE_F"  # Degraded Tools
     TEMPLATE_G = "TEMPLATE_G"  # Compile-to-Code
+    TEMPLATE_H = "TEMPLATE_H"  # Full-Stack Mission Flow
 
 
 class IntentClass(str, Enum):

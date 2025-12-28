@@ -28,8 +28,8 @@ class TestTemplateRegistry:
     """Tests for template registry functions."""
     
     def test_all_templates_registered(self):
-        """All 7 canonical templates are in registry."""
-        assert len(CANONICAL_TEMPLATES) == 7
+        """All 8 canonical templates are in registry (A-H)."""
+        assert len(CANONICAL_TEMPLATES) == 8
         for tid in TemplateID:
             assert tid in CANONICAL_TEMPLATES
     
@@ -40,9 +40,9 @@ class TestTemplateRegistry:
         assert template.name == "Grounding Loop"
     
     def test_get_all_templates(self):
-        """get_all_templates returns all 7."""
+        """get_all_templates returns all 8 (A-H)."""
         templates = get_all_templates()
-        assert len(templates) == 7
+        assert len(templates) == 8
         ids = {t.template_id for t in templates}
         assert ids == set(TemplateID)
 
