@@ -3,6 +3,7 @@ Layers — ACE cognitive layer infrastructure.
 
 - Layer contracts (what each layer can emit/receive)
 - Layer base class (common invoke/parse logic)
+- Layer prompts (system prompts for each layer)
 - Layer implementations (L1-L6)
 
 Spec: OMEN.md §6, §11.1, ACE_Framework.md
@@ -33,6 +34,15 @@ from omen.layers.base import (
     MockLLMClient,
     create_mock_client,
 )
+from omen.layers.prompts import (
+    LAYER_1_PROMPT,
+    LAYER_2_PROMPT,
+    LAYER_3_PROMPT,
+    LAYER_4_PROMPT,
+    LAYER_5_PROMPT,
+    LAYER_6_PROMPT,
+    LAYER_PROMPTS,
+)
 
 __all__ = [
     # Contract types
@@ -60,4 +70,12 @@ __all__ = [
     "Layer",
     "MockLLMClient",
     "create_mock_client",
+    # Prompts
+    "LAYER_1_PROMPT",
+    "LAYER_2_PROMPT",
+    "LAYER_3_PROMPT",
+    "LAYER_4_PROMPT",
+    "LAYER_5_PROMPT",
+    "LAYER_6_PROMPT",
+    "LAYER_PROMPTS",
 ]
