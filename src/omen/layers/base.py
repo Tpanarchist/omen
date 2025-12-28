@@ -312,8 +312,15 @@ class Layer(ABC):
     def _get_packet_type(self, packet: Any) -> PacketType | None:
         """Extract packet type from a packet."""
         try:
+            # Try packet object with header
             return packet.header.packet_type
         except AttributeError:
+            # Try dict with 'type' field (from parser inference)
+            if isinstance(packet, dict) and "type" in packet:
+                try:
+                    return PacketType(packet["type"])
+                except (ValueError, KeyError):
+                    pass
             return None
     
     def _format_packet(self, packet: Any) -> str:

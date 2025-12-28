@@ -19,6 +19,7 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "mypy>=1.7.0",
+    "openai>=1.0.0",
 ]
 
 [build-system]

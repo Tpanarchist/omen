@@ -77,7 +77,7 @@ class ConfigurableLayer(Layer):
         Default parser that extracts JSON objects from response.
         
         Looks for JSON blocks in the response and returns them as dicts.
-        Actual packet instantiation happens at the orchestrator level.
+        Infers packet type from payload fields.
         """
         packets = []
         
@@ -88,12 +88,8 @@ class ConfigurableLayer(Layer):
         for match in matches:
             try:
                 obj = json.loads(match)
-                # Wrap in a simple container that tracks source
-                packets.append({
-                    "_source": self.layer_id.value,
-                    "_raw": obj,
-                    **obj
-                })
+                packet = self._infer_packet_type(obj)
+                packets.append(packet)
             except json.JSONDecodeError:
                 continue
         
@@ -102,22 +98,48 @@ class ConfigurableLayer(Layer):
             try:
                 obj = json.loads(response)
                 if isinstance(obj, list):
-                    packets.extend([{
-                        "_source": self.layer_id.value,
-                        "_raw": item,
-                        **item
-                    } for item in obj])
+                    packets.extend([self._infer_packet_type(item) for item in obj])
                 else:
-                    packets.append({
-                        "_source": self.layer_id.value,
-                        "_raw": obj,
-                        **obj
-                    })
+                    packets.append(self._infer_packet_type(obj))
             except json.JSONDecodeError:
                 # Response isn't JSON, return empty
                 pass
         
         return packets
+    
+    def _infer_packet_type(self, obj: dict) -> dict:
+        """
+        Infer packet type from payload fields.
+        
+        LLMs return payload JSON without headers. We infer the type
+        from field signatures and add a 'type' field for validation.
+        Uses PacketType enum values.
+        """
+        # Signature-based type inference (order matters - most specific first)
+        if "task_id" in obj and "action" in obj:
+            obj["type"] = "TaskDirectivePacket"
+        elif "task_id" in obj and "status" in obj:
+            obj["type"] = "TaskResultPacket"
+        elif "decision_outcome" in obj:
+            obj["type"] = "DecisionPacket"
+        elif "verification_target" in obj:
+            obj["type"] = "VerificationPlanPacket"
+        elif "observation_type" in obj:
+            obj["type"] = "ObservationPacket"
+        elif "update_type" in obj:
+            obj["type"] = "BeliefUpdatePacket"
+        elif "escalation_reason" in obj:
+            obj["type"] = "EscalationPacket"
+        elif "token_id" in obj and "authorized_actions" in obj:
+            obj["type"] = "ToolAuthorizationToken"
+        elif "alert_type" in obj:
+            obj["type"] = "IntegrityAlertPacket"
+        
+        # Track source and raw for debugging
+        obj["_source"] = self.layer_id.value
+        obj["_raw"] = obj.copy()
+        
+        return obj
 
 
 # =============================================================================
