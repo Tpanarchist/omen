@@ -1,11 +1,31 @@
 """
-Integrity — System integrity overlay (out-of-band supervisor).
+Integrity Overlay — System safety and constraint enforcement.
 
-Responsibilities:
-- Budget enforcement
-- Tool health monitoring
-- Drift detection
-- Safe mode triggers
-- Token revocation
-- Auditability
+Provides:
+- IntegrityMonitor: Watches buses, enforces constraints
+- SafeMode: System safety states
+- Budget enforcement and token revocation
+- Constitutional veto processing
+
+Spec: OMEN.md §12
 """
+
+from omen.integrity.monitor import (
+    SafeMode,
+    AlertSeverity,
+    AlertType,
+    IntegrityEvent,
+    MonitorConfig,
+    IntegrityMonitor,
+    create_monitor,
+)
+
+__all__ = [
+    "SafeMode",
+    "AlertSeverity",
+    "AlertType",
+    "IntegrityEvent",
+    "MonitorConfig",
+    "IntegrityMonitor",
+    "create_monitor",
+]
