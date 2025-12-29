@@ -7,7 +7,7 @@ Implements LLMClient protocol using OpenAI's API.
 import os
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 try:
     from openai import OpenAI, APIError, RateLimitError
@@ -37,7 +37,19 @@ class OpenAIClient:
         response = client.complete(system_prompt, user_message)
     """
     
-    def __init__(self, config: OpenAIConfig | None = None):
+    def __init__(
+        self,
+        config: OpenAIConfig | None = None,
+        on_usage: Callable[[dict], None] | None = None,
+    ):
+        """
+        Initialize OpenAI client.
+        
+        Args:
+            config: Client configuration
+            on_usage: Optional callback for token usage tracking.
+                     Called with dict containing prompt_tokens, completion_tokens, total_tokens.
+        """
         if not OPENAI_AVAILABLE:
             raise ImportError(
                 "OpenAI package not installed. "
@@ -45,6 +57,7 @@ class OpenAIClient:
             )
         
         self.config = config or OpenAIConfig()
+        self._on_usage = on_usage
         
         # Get API key
         api_key = self.config.api_key or os.environ.get("OPENAI_API_KEY")
@@ -90,6 +103,10 @@ class OpenAIClient:
                         "completion_tokens": response.usage.completion_tokens,
                         "total_tokens": response.usage.total_tokens,
                     }
+                    
+                    # Call usage callback if provided
+                    if self._on_usage:
+                        self._on_usage(self._last_usage)
                 
                 return response.choices[0].message.content or ""
                 
