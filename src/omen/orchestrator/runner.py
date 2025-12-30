@@ -17,11 +17,34 @@ from omen.layers import LayerInput, LayerOutput
 from omen.compiler import CompiledEpisode, CompiledStep
 from omen.orchestrator.ledger import EpisodeLedger, BudgetState
 from omen.orchestrator.pool import LayerPool
+from omen.tools.base import ToolResult
 
 
 # =============================================================================
 # RUN RESULT
 # =============================================================================
+
+@dataclass
+class ToolExecution:
+    """Captures details of a single tool execution within a step."""
+    tool_name: str
+    input_params: dict[str, Any]
+    result: ToolResult
+    timestamp: datetime = field(default_factory=datetime.now)
+    duration_seconds: float = 0.0
+    
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return {
+            "tool_name": self.tool_name,
+            "input_params": self.input_params,
+            "success": self.result.success,
+            "data": self.result.data,
+            "error": self.result.error,
+            "timestamp": self.timestamp.isoformat(),
+            "duration_seconds": self.duration_seconds,
+        }
+
 
 @dataclass
 class StepResult:
@@ -33,6 +56,24 @@ class StepResult:
     packets_emitted: int = 0
     error: str | None = None
     duration_seconds: float = 0.0
+    
+    # Budget tracking (deltas for this step)
+    tokens_consumed: int = 0
+    tool_calls_consumed: int = 0
+    time_consumed: float = 0.0
+    
+    # Context capture
+    system_prompt: str = ""  # Optional, only in verbose/debug mode
+    context_summary: dict[str, Any] = field(default_factory=dict)
+    
+    # Tool execution details
+    tool_executions: list[ToolExecution] = field(default_factory=list)
+    
+    # Packet tracking (actual packet objects, not just count)
+    packets_emitted_list: list[Any] = field(default_factory=list)
+    
+    # FSM state tracking
+    fsm_state: str = ""  # Current FSM state for this step
 
 
 @dataclass
@@ -220,6 +261,13 @@ class EpisodeRunner:
             },
         )
         
+        # Capture budget state before execution
+        budget_before = {
+            "tokens": ledger.budget.tokens_consumed,
+            "tool_calls": ledger.budget.tool_calls_consumed,
+            "time": ledger.budget.time_consumed_seconds,
+        }
+        
         # Invoke layer
         output = self.layer_pool.invoke_layer(step.owner_layer, layer_input)
         
@@ -229,6 +277,7 @@ class EpisodeRunner:
                 layer=step.owner_layer,
                 success=False,
                 error=f"Layer {step.owner_layer.value} invocation failed",
+                fsm_state=step.fsm_state.value if step.fsm_state else "",
             )
         
         # Route output packets via buses
@@ -239,6 +288,17 @@ class EpisodeRunner:
         
         duration = (datetime.now() - start_time).total_seconds()
         
+        # Calculate budget deltas
+        budget_after = {
+            "tokens": ledger.budget.tokens_consumed,
+            "tool_calls": ledger.budget.tool_calls_consumed,
+            "time": ledger.budget.time_consumed_seconds,
+        }
+        
+        tokens_delta = budget_after["tokens"] - budget_before["tokens"]
+        tool_calls_delta = budget_after["tool_calls"] - budget_before["tool_calls"]
+        time_delta = budget_after["time"] - budget_before["time"]
+        
         return StepResult(
             step_id=step.step_id,
             layer=step.owner_layer,
@@ -247,6 +307,16 @@ class EpisodeRunner:
             packets_emitted=len(output.packets),
             error="; ".join(output.errors) if output.errors else None,
             duration_seconds=duration,
+            # New fields for transcript generation
+            tokens_consumed=tokens_delta,
+            tool_calls_consumed=tool_calls_delta,
+            time_consumed=time_delta,
+            context_summary={
+                "template_id": episode.template_id.value,
+                "mcp_bindings": step.mcp_bindings,
+            },
+            packets_emitted_list=output.packets if output else [],
+            fsm_state=step.fsm_state.value if step.fsm_state else "",
         )
     
     def _route_packets(
