@@ -15,7 +15,7 @@ from omen.memory import (
 
 class TestInMemoryBeliefStore:
     """Tests for in-memory belief storage."""
-    
+
     @pytest.fixture
     def store(self):
         return create_memory_store()
@@ -280,7 +280,7 @@ class TestInMemoryBeliefStore:
 
 class TestSQLiteBeliefStore:
     """Tests for SQLite belief storage."""
-    
+
     @pytest.fixture
     def store(self, tmp_path):
         db_path = tmp_path / "test_beliefs.db"
