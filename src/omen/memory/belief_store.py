@@ -128,8 +128,6 @@ class InMemoryBeliefStore:
         normalized = replace(
             belief,
             version=1,
-            created_at=belief.created_at or datetime.utcnow(),
-            updated_at=belief.updated_at or datetime.utcnow(),
         )
         self._beliefs[belief.belief_id] = [normalized]
         return normalized
