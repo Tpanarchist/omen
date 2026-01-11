@@ -61,6 +61,13 @@ from omen.episode import (
     StepRecord,
     PacketRecord,
 )
+from omen.memory import (
+    BeliefStore,
+    SelfModelStore,
+    consolidate_episodes,
+    create_memory_belief_store,
+    create_memory_self_model_store,
+)
 
 
 # =============================================================================
@@ -96,6 +103,12 @@ class OrchestratorConfig:
     # Persistence
     episode_store: EpisodeStore | None = None
     auto_save: bool = True  # Save episodes on completion
+
+    # Memory consolidation
+    enable_consolidation: bool = True
+    consolidation_episode_limit: int = 5
+    belief_store: BeliefStore | None = None
+    self_model_store: SelfModelStore | None = None
 
 
 # =============================================================================
@@ -169,6 +182,10 @@ class Orchestrator:
         
         # Set up episode storage
         self.episode_store = episode_store or self.config.episode_store
+
+        # Set up memory stores
+        self.belief_store = self.config.belief_store or create_memory_belief_store()
+        self.self_model_store = self.config.self_model_store or create_memory_self_model_store()
     
     def run_template(
         self,
@@ -285,9 +302,16 @@ class Orchestrator:
         )
         
         # Save episode if store configured
+        record = None
         if self.episode_store and self.config.auto_save:
             record = self._create_episode_record(result, ledger, template, context)
             self.episode_store.save(record)
+
+        # Post-episode consolidation hook
+        if self.config.enable_consolidation:
+            if record is None:
+                record = self._create_episode_record(result, ledger, template, context)
+            self._run_consolidation(record)
         
         return result
     
@@ -422,6 +446,23 @@ class Orchestrator:
             evidence_refs=ledger.evidence_refs,
             assumptions=ledger.assumptions,
             contradictions=ledger.contradiction_details,
+        )
+
+    def _run_consolidation(self, record: EpisodeRecord) -> None:
+        """Run memory consolidation on recent episodes."""
+        episodes = [record]
+        if self.episode_store:
+            episodes = self.episode_store.query(
+                campaign_id=record.campaign_id,
+                limit=self.config.consolidation_episode_limit,
+            )
+            if record not in episodes:
+                episodes.insert(0, record)
+        consolidate_episodes(
+            episodes,
+            belief_store=self.belief_store,
+            self_model_store=self.self_model_store,
+            max_episodes=self.config.consolidation_episode_limit,
         )
     
     def get_episode(self, correlation_id: UUID) -> EpisodeRecord | None:
