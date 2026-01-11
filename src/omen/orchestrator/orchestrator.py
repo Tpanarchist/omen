@@ -61,6 +61,7 @@ from omen.episode import (
     StepRecord,
     PacketRecord,
 )
+from omen.memory import BeliefStore
 
 
 # =============================================================================
@@ -96,6 +97,7 @@ class OrchestratorConfig:
     # Persistence
     episode_store: EpisodeStore | None = None
     auto_save: bool = True  # Save episodes on completion
+    belief_store: BeliefStore | None = None
 
 
 # =============================================================================
@@ -127,6 +129,7 @@ class Orchestrator:
         compiler: TemplateCompiler | None = None,
         validator: TemplateValidator | None = None,
         episode_store: EpisodeStore | None = None,
+        belief_store: BeliefStore | None = None,
     ):
         """
         Initialize orchestrator.
@@ -169,6 +172,7 @@ class Orchestrator:
         
         # Set up episode storage
         self.episode_store = episode_store or self.config.episode_store
+        self.belief_store = belief_store or self.config.belief_store
     
     def run_template(
         self,
