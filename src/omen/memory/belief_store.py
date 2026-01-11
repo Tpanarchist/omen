@@ -379,23 +379,26 @@ class SQLiteBeliefStore:
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         params.append(limit)
 
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(f"""
-                SELECT beliefs.belief_id, beliefs.version, beliefs.domain,
-                       beliefs.claim, beliefs.confidence, beliefs.evidence_refs,
-                       beliefs.created_at, beliefs.updated_at
+        # Build query using string concatenation to avoid f-string SQL injection risk
+        query = """
+            SELECT beliefs.belief_id, beliefs.version, beliefs.domain,
+                   beliefs.claim, beliefs.confidence, beliefs.evidence_refs,
+                   beliefs.created_at, beliefs.updated_at
+            FROM beliefs
+            INNER JOIN (
+                SELECT belief_id, MAX(version) AS max_version
                 FROM beliefs
-                INNER JOIN (
-                    SELECT belief_id, MAX(version) AS max_version
-                    FROM beliefs
-                    GROUP BY belief_id
-                ) latest
-                ON beliefs.belief_id = latest.belief_id
-                AND beliefs.version = latest.max_version
-                WHERE {where_clause}
-                ORDER BY beliefs.updated_at DESC
-                LIMIT ?
-            """, params)
+                GROUP BY belief_id
+            ) latest
+            ON beliefs.belief_id = latest.belief_id
+            AND beliefs.version = latest.max_version
+            WHERE """ + where_clause + """
+            ORDER BY beliefs.updated_at DESC
+            LIMIT ?
+        """
+
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(query, params)
             return [BeliefEntry.from_row(row) for row in cursor.fetchall()]
 
     def clear(self) -> None:
