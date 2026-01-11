@@ -43,6 +43,11 @@ from omen.memory.consolidation import (
     ConsolidationCycle,
     create_consolidation_cycle,
 )
+from omen.memory.manager import (
+    MemoryContext,
+    MemoryManager,
+    create_memory_manager,
+)
 
 __all__ = [
     # Episodic memory
@@ -68,4 +73,8 @@ __all__ = [
     # Consolidation
     "ConsolidationCycle",
     "create_consolidation_cycle",
+    # Memory Manager
+    "MemoryContext",
+    "MemoryManager",
+    "create_memory_manager",
 ]
