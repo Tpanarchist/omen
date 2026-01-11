@@ -96,6 +96,15 @@ class OrchestratorConfig:
     # Persistence
     episode_store: EpisodeStore | None = None
     auto_save: bool = True  # Save episodes on completion
+    
+    # Memory systems
+    enable_memory: bool = False  # Enable long-term memory
+    memory_backend: str = "memory"  # "memory" or "sqlite"
+    memory_db_path: str | None = None  # Path to SQLite DB for memory
+    auto_consolidate: bool = True  # Auto-consolidate memories
+    consolidation_threshold: int = 5  # Episodes before consolidation
+    inject_memory_context: bool = True  # Inject memories at episode start
+
 
 
 # =============================================================================
@@ -169,6 +178,18 @@ class Orchestrator:
         
         # Set up episode storage
         self.episode_store = episode_store or self.config.episode_store
+        
+        # Set up memory manager if enabled
+        self.memory_manager = None
+        if self.config.enable_memory and self.episode_store:
+            from omen.memory import create_memory_manager
+            self.memory_manager = create_memory_manager(
+                episode_store=self.episode_store,
+                backend=self.config.memory_backend,
+                db_path=self.config.memory_db_path,
+                auto_consolidate=self.config.auto_consolidate,
+                consolidation_threshold=self.config.consolidation_threshold,
+            )
     
     def run_template(
         self,
@@ -277,17 +298,33 @@ class Orchestrator:
         # Create ledger
         ledger = self._create_ledger(cid, context, template)
         
+        # Retrieve memory context if memory manager is enabled
+        memory_packets = []
+        if self.memory_manager and self.config.inject_memory_context:
+            memory_context = self.memory_manager.retrieve_context(
+                domain=campaign_id,  # Use campaign_id as domain
+                query=None,  # Could extract from template or context
+            )
+            memory_packets = memory_context.to_observation_packets()
+        
+        # Merge memory packets with initial packets
+        all_initial_packets = (memory_packets + (initial_packets or []))
+        
         # Run episode
         result = self.runner.run(
             episode=compilation.episode,
             ledger=ledger,
-            initial_packets=initial_packets,
+            initial_packets=all_initial_packets if all_initial_packets else None,
         )
         
         # Save episode if store configured
         if self.episode_store and self.config.auto_save:
             record = self._create_episode_record(result, ledger, template, context)
             self.episode_store.save(record)
+            
+            # Trigger memory consolidation if enabled
+            if self.memory_manager:
+                self.memory_manager.after_episode(record)
         
         return result
     
@@ -319,6 +356,31 @@ class Orchestrator:
     def get_buses(self) -> tuple[NorthboundBus, SouthboundBus]:
         """Get the buses for inspection."""
         return self.northbound_bus, self.southbound_bus
+    
+    def get_memory_stats(self) -> dict[str, Any] | None:
+        """
+        Get memory system statistics.
+        
+        Returns:
+            Dictionary with memory stats, or None if memory not enabled
+        """
+        if self.memory_manager:
+            return self.memory_manager.get_memory_stats()
+        return None
+    
+    def consolidate_memories(self, since: Any | None = None) -> Any | None:
+        """
+        Manually trigger memory consolidation.
+        
+        Args:
+            since: Only consolidate episodes since this time (optional)
+        
+        Returns:
+            ConsolidationResult or None if memory not enabled
+        """
+        if self.memory_manager:
+            return self.memory_manager.consolidate(since=since)
+        return None
     
     def _build_context(
         self,
