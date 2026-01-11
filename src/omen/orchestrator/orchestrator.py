@@ -8,15 +8,25 @@ Spec: OMEN.md §10.4, §11
 """
 
 from dataclasses import dataclass, field
+from datetime import datetime
+import re
 from typing import Any
 from uuid import UUID, uuid4
 
 from omen.vocabulary import (
+    Adversariality,
+    EpistemicStatus,
+    EvidenceRefType,
+    ImpactLevel,
+    Irreversibility,
     LayerSource,
+    PacketType,
     TemplateID,
     QualityTier,
     StakesLevel,
+    TaskClass,
     ToolsState,
+    UncertaintyLevel,
 )
 from omen.templates import (
     EpisodeTemplate,
@@ -40,6 +50,7 @@ from omen.buses import (
     create_southbound_bus,
 )
 from omen.layers import LLMClient, MockLLMClient
+from omen.memory.belief_store import BeliefRecord, BeliefStore
 from omen.orchestrator.ledger import (
     EpisodeLedger,
     BudgetState,
@@ -60,6 +71,13 @@ from omen.episode import (
     EpisodeRecord,
     StepRecord,
     PacketRecord,
+)
+from omen.schemas.header import PacketHeader
+from omen.schemas.mcp import MCP
+from omen.schemas.packets.observation import (
+    ObservationPacket,
+    ObservationPayload,
+    ObservationSource,
 )
 
 
@@ -95,6 +113,7 @@ class OrchestratorConfig:
     
     # Persistence
     episode_store: EpisodeStore | None = None
+    belief_store: BeliefStore | None = None
     auto_save: bool = True  # Save episodes on completion
 
 
@@ -127,6 +146,7 @@ class Orchestrator:
         compiler: TemplateCompiler | None = None,
         validator: TemplateValidator | None = None,
         episode_store: EpisodeStore | None = None,
+        belief_store: BeliefStore | None = None,
     ):
         """
         Initialize orchestrator.
@@ -169,6 +189,7 @@ class Orchestrator:
         
         # Set up episode storage
         self.episode_store = episode_store or self.config.episode_store
+        self.belief_store = belief_store or self.config.belief_store
     
     def run_template(
         self,
@@ -183,6 +204,7 @@ class Orchestrator:
         tool_call_budget: int | None = None,
         time_budget_seconds: int | None = None,
         initial_packets: list[Any] | None = None,
+        user_query: str | None = None,
     ) -> EpisodeResult:
         """
         Run an episode using a canonical template.
@@ -198,6 +220,7 @@ class Orchestrator:
             tool_call_budget: Tool call budget override
             time_budget_seconds: Time budget override
             initial_packets: Initial packets to seed execution
+            user_query: Optional user query for memory retrieval
         
         Returns:
             EpisodeResult with execution details
@@ -223,6 +246,7 @@ class Orchestrator:
             tool_call_budget=tool_call_budget,
             time_budget_seconds=time_budget_seconds,
             initial_packets=initial_packets,
+            user_query=user_query,
         )
     
     def run_episode(
@@ -238,6 +262,7 @@ class Orchestrator:
         tool_call_budget: int | None = None,
         time_budget_seconds: int | None = None,
         initial_packets: list[Any] | None = None,
+        user_query: str | None = None,
     ) -> EpisodeResult:
         """
         Run an episode using a custom or canonical template.
@@ -276,12 +301,19 @@ class Orchestrator:
         
         # Create ledger
         ledger = self._create_ledger(cid, context, template)
+
+        retrieved_packets = self._retrieve_memory_packets(
+            template=template,
+            context=context,
+            user_query=user_query,
+        )
+        combined_packets = retrieved_packets + (initial_packets or [])
         
         # Run episode
         result = self.runner.run(
             episode=compilation.episode,
             ledger=ledger,
-            initial_packets=initial_packets,
+            initial_packets=combined_packets,
         )
         
         # Save episode if store configured
@@ -290,6 +322,245 @@ class Orchestrator:
             self.episode_store.save(record)
         
         return result
+
+    def _retrieve_memory_packets(
+        self,
+        template: EpisodeTemplate,
+        context: CompilationContext,
+        user_query: str | None = None,
+        limit: int = 5,
+    ) -> list[ObservationPacket]:
+        """Retrieve memory-backed observations to seed execution."""
+        packets: list[ObservationPacket] = []
+        keywords = self._extract_keywords(
+            template.name,
+            template.description,
+            template.template_id.value,
+            template.intent_class.value,
+            user_query,
+        )
+        tags = [
+            template.template_id.value.lower(),
+            template.intent_class.value.lower(),
+        ]
+        domain = template.intent_class.value
+
+        if self.belief_store:
+            beliefs = self.belief_store.query(
+                domain=domain,
+                tags=tags,
+                keywords=keywords,
+                limit=limit,
+            )
+            for belief in beliefs:
+                packets.append(
+                    self._build_belief_packet(
+                        belief=belief,
+                        context=context,
+                        query=user_query,
+                    )
+                )
+
+        if self.episode_store:
+            episodes = self.episode_store.query(
+                template_id=template.template_id.value,
+                campaign_id=context.campaign_id,
+                limit=limit,
+            )
+            for episode in episodes:
+                if keywords and not self._matches_keywords(
+                    self._episode_search_text(episode),
+                    keywords,
+                ):
+                    continue
+                packets.append(
+                    self._build_episode_packet(
+                        episode=episode,
+                        context=context,
+                        query=user_query,
+                    )
+                )
+
+        return packets
+
+    def _extract_keywords(self, *values: str | None) -> list[str]:
+        keywords: set[str] = set()
+        for value in values:
+            if not value:
+                continue
+            for token in re.findall(r"[a-zA-Z0-9_]+", value.lower()):
+                if len(token) > 2:
+                    keywords.add(token)
+        return sorted(keywords)
+
+    def _matches_keywords(self, text: str, keywords: list[str]) -> bool:
+        if not keywords:
+            return True
+        haystack = text.lower()
+        return any(keyword.lower() in haystack for keyword in keywords)
+
+    def _episode_search_text(self, episode: EpisodeRecord) -> str:
+        return " ".join([
+            episode.template_id,
+            episode.final_step or "",
+            " ".join(episode.errors),
+            " ".join(str(item) for item in episode.assumptions),
+            " ".join(str(item) for item in episode.contradictions),
+        ])
+
+    def _build_belief_packet(
+        self,
+        belief: BeliefRecord,
+        context: CompilationContext,
+        query: str | None,
+    ) -> ObservationPacket:
+        return self._build_memory_packet(
+            context=context,
+            source_type="belief_store",
+            source_id=belief.belief_id,
+            observation_type="belief_memory",
+            observed_at=belief.updated_at,
+            content={
+                "belief_id": belief.belief_id,
+                "domain": belief.domain,
+                "summary": belief.summary,
+                "details": belief.details,
+                "tags": belief.tags,
+            },
+            evidence_refs=[{
+                "ref_type": EvidenceRefType.MEMORY_ITEM,
+                "ref_id": belief.belief_id,
+                "timestamp": belief.updated_at,
+            }],
+            query=query,
+            template_id=None,
+        )
+
+    def _build_episode_packet(
+        self,
+        episode: EpisodeRecord,
+        context: CompilationContext,
+        query: str | None,
+    ) -> ObservationPacket:
+        observed_at = episode.completed_at or episode.started_at
+        return self._build_memory_packet(
+            context=context,
+            source_type="episode_store",
+            source_id=str(episode.correlation_id),
+            observation_type="episode_memory",
+            observed_at=observed_at,
+            content={
+                "correlation_id": str(episode.correlation_id),
+                "template_id": episode.template_id,
+                "campaign_id": episode.campaign_id,
+                "success": episode.success,
+                "final_step": episode.final_step,
+                "errors": episode.errors,
+                "assumptions": episode.assumptions,
+                "contradictions": episode.contradictions,
+            },
+            evidence_refs=[{
+                "ref_type": EvidenceRefType.MEMORY_ITEM,
+                "ref_id": str(episode.correlation_id),
+                "timestamp": observed_at,
+            }],
+            query=query,
+            template_id=episode.template_id,
+        )
+
+    def _build_memory_packet(
+        self,
+        *,
+        context: CompilationContext,
+        source_type: str,
+        source_id: str,
+        observation_type: str,
+        observed_at: datetime,
+        content: dict[str, Any],
+        evidence_refs: list[dict[str, Any]],
+        query: str | None,
+        template_id: str | None,
+    ) -> ObservationPacket:
+        return ObservationPacket(
+            header=PacketHeader(
+                packet_type=PacketType.OBSERVATION,
+                created_at=datetime.now(),
+                layer_source=LayerSource.LAYER_6,
+                correlation_id=context.correlation_id,
+                campaign_id=None,
+            ),
+            mcp=self._build_memory_mcp(
+                context=context,
+                intent_summary=f"Memory retrieval: {observation_type}",
+                intent_scope="memory",
+                evidence_refs=evidence_refs,
+            ),
+            payload=ObservationPayload(
+                source=ObservationSource(
+                    source_type=source_type,
+                    source_id=source_id,
+                    query_params={
+                        "query": query,
+                        "template_id": template_id,
+                    },
+                ),
+                observation_type=observation_type,
+                observed_at=observed_at,
+                content=content,
+                raw_ref=None,
+                content_hash=None,
+            ),
+        )
+
+    def _build_memory_mcp(
+        self,
+        *,
+        context: CompilationContext,
+        intent_summary: str,
+        intent_scope: str,
+        evidence_refs: list[dict[str, Any]],
+    ) -> MCP:
+        evidence_payload: dict[str, Any] = {"evidence_refs": evidence_refs}
+        if not evidence_refs:
+            evidence_payload["evidence_absent_reason"] = "No memory evidence available"
+        return MCP(
+            intent={
+                "summary": intent_summary,
+                "scope": intent_scope,
+            },
+            stakes={
+                "impact": ImpactLevel(context.stakes.impact),
+                "irreversibility": Irreversibility(context.stakes.irreversibility),
+                "uncertainty": UncertaintyLevel(context.stakes.uncertainty),
+                "adversariality": Adversariality(context.stakes.adversariality),
+                "stakes_level": context.stakes.stakes_level,
+            },
+            quality={
+                "quality_tier": context.quality.quality_tier,
+                "satisficing_mode": context.quality.satisficing_mode,
+                "definition_of_done": context.quality.definition_of_done,
+                "verification_requirement": context.quality.verification_requirement,
+            },
+            budgets={
+                "token_budget": context.budgets.token_budget,
+                "tool_call_budget": context.budgets.tool_call_budget,
+                "time_budget_seconds": context.budgets.time_budget_seconds,
+                "risk_budget": context.budgets.risk_budget,
+            },
+            epistemics={
+                "status": EpistemicStatus.REMEMBERED,
+                "confidence": 0.6,
+                "calibration_note": "Retrieved from memory store",
+                "freshness_class": context.freshness_class,
+                "stale_if_older_than_seconds": 86400,
+                "assumptions": [],
+            },
+            evidence=evidence_payload,
+            routing={
+                "task_class": TaskClass.LOOKUP,
+                "tools_state": context.tools_state,
+            },
+        )
     
     def compile_template(
         self,
