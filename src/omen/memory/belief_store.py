@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from dataclasses import dataclass, field, replace
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -25,8 +25,8 @@ class BeliefEntry:
     confidence: float
     evidence_refs: list[str] = field(default_factory=list)
     version: int = 1
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     def to_json(self) -> str:
         """Serialize the belief entry as JSON."""
@@ -128,8 +128,8 @@ class InMemoryBeliefStore:
         normalized = replace(
             belief,
             version=1,
-            created_at=belief.created_at or datetime.utcnow(),
-            updated_at=belief.updated_at or datetime.utcnow(),
+            created_at=belief.created_at or datetime.now(timezone.utc),
+            updated_at=belief.updated_at or datetime.now(timezone.utc),
         )
         self._beliefs[belief.belief_id] = [normalized]
         return normalized
@@ -157,7 +157,7 @@ class InMemoryBeliefStore:
         latest = self.load(belief_id)
         if latest is None:
             return None
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         updated = BeliefEntry(
             belief_id=belief_id,
             domain=domain or latest.domain,
@@ -247,7 +247,7 @@ class SQLiteBeliefStore:
     def create(self, belief: BeliefEntry) -> BeliefEntry:
         if self.exists(belief.belief_id):
             raise ValueError(f"Belief already exists: {belief.belief_id}")
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         normalized = replace(
             belief,
             version=1,
@@ -308,7 +308,7 @@ class SQLiteBeliefStore:
         latest = self.load(belief_id)
         if latest is None:
             return None
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         updated = BeliefEntry(
             belief_id=belief_id,
             domain=domain or latest.domain,
