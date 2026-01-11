@@ -363,9 +363,13 @@ class SQLiteBeliefStore:
         until: datetime | None = None,
         limit: int = 100,
     ) -> list[BeliefEntry]:
+        # Build WHERE clause from hard-coded condition strings only.
+        # All user input goes through parameterized queries to prevent SQL injection.
         conditions = []
         params: list[object] = []
 
+        # Each condition is a hard-coded SQL string with parameterized placeholders (?).
+        # User-provided values are added to params list, never interpolated into SQL.
         if domain:
             conditions.append("beliefs.domain = ?")
             params.append(domain)
@@ -376,10 +380,13 @@ class SQLiteBeliefStore:
             conditions.append("beliefs.updated_at <= ?")
             params.append(until.isoformat())
 
+        # Join hard-coded condition strings - safe because conditions list only contains
+        # literal SQL strings defined above, never user input
         where_clause = " AND ".join(conditions) if conditions else "1=1"
         params.append(limit)
 
-        # Build query using string concatenation to avoid f-string SQL injection risk
+        # Use string concatenation instead of f-strings to make it explicit that
+        # where_clause contains only hard-coded SQL fragments, not user input
         query = """
             SELECT beliefs.belief_id, beliefs.version, beliefs.domain,
                    beliefs.claim, beliefs.confidence, beliefs.evidence_refs,
